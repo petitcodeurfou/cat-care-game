@@ -153,21 +153,23 @@ export default function CatGame() {
         setIsTyping(true)
 
         try {
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Tu es un assistant IA amical dans un jeu de chat virtuel. Réponds en français, de manière concise.\n\nUtilisateur: "${msg}"\n\nRéponds:` }] }],
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
-                    })
-                }
-            )
-            const data = await response.json()
-            setMessages(m => [...m, { sender: 'cat', text: data.candidates[0].content.parts[0].text }])
-        } catch {
-            setMessages(m => [...m, { sender: 'cat', text: "Erreur, réessaye !" }])
+            // Appel à la Netlify Function au lieu de Google directement
+            const response = await fetch('/.netlify/functions/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: msg,
+                    stats: stats
+                })
+            });
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+
+            setMessages(m => [...m, { sender: 'cat', text: data.text }])
+        } catch (e) {
+            console.error(e);
+            setMessages(m => [...m, { sender: 'cat', text: "Miaou ? (Je n'arrive pas à répondre...)" }])
         }
         setIsTyping(false)
     }
